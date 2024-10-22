@@ -80,7 +80,7 @@ export const createInitialDeck = (): Deck => [
 ];
 
 export const shuffleDeck = (shuffler: Shuffler<Card> = standardShuffler) =>
-    (deck: Deck): Deck => [...shuffler([...deck])];
+    (deck: Deck): Deck => shuffler([...deck]);
 
 export const dealCard = (deck: Deck): [Card | undefined, Deck] => {
     const [firstCard, ...rest] = deck;

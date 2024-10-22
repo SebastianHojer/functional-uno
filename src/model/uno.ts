@@ -1,7 +1,7 @@
 import { pipe } from 'ramda';
 import {Randomizer, Shuffler, standardRandomizer, standardShuffler} from "../utils/random_utils";
-import { Card, createInitialDeck } from "./deck";
-import {Hand, HandConfig, createInitialHand, reverseDirection, skipTurn, draw as handDrawCard} from "./hand";
+import { Card } from "./deck";
+import {Hand, createHand, reverseDirection, skipTurn, draw as handDrawCard} from "./hand";
 
 // Immutable types
 export type Score = number;
@@ -17,7 +17,7 @@ export type Game = Readonly<{
     dealer: number;
 }>;
 
-export type GameConfig = Readonly<{
+export type Props = Readonly<{
     players?: ReadonlyArray<PlayerName>;
     targetScore?: number;
     randomizer?: Randomizer;
@@ -25,8 +25,7 @@ export type GameConfig = Readonly<{
     cardsPerPlayer?: number;
 }>;
 
-// Pure function to create initial game state
-export const createGame = (config: GameConfig): Game => {
+export const createGame = (config: Props): Game => {
     const {
         players = ["A", "B"],
         targetScore = 500,
@@ -49,13 +48,7 @@ export const createGame = (config: GameConfig): Game => {
 
     const initialDealer = randomizer(players.length);
 
-    const initialHand = createInitialHand({
-        playersCount: players.length,
-        cardsPerPlayer,
-        deck: createInitialDeck(),
-        dealer: initialDealer,
-        shuffler
-    });
+    const initialHand = createHand(players, initialDealer, shuffler, cardsPerPlayer);
 
     return {
         players,
@@ -83,7 +76,7 @@ export const getScore = (state: Game, playerIndex: number): Score => {
 };
 
 export const calculateHandScore = (hand: Hand, winner: number): number => {
-    return hand.playerHands.reduce((total, playerHand, index) => {
+    return hand.hands.reduce((total, playerHand, index) => {
         if (index === winner) return total;
 
         return total + playerHand.reduce((cardTotal, card) => {
@@ -97,17 +90,9 @@ export const calculateHandScore = (hand: Hand, winner: number): number => {
 export const startNewHand = (state: Game, randomizer: Randomizer = standardRandomizer, shuffler: Shuffler<Card> = standardShuffler): Game => {
     const nextDealer = (state.dealer+1) % state.players.length
 
-    const handConfig: HandConfig = {
-        playersCount: state.players.length,
-        cardsPerPlayer: 7,
-        deck: createInitialDeck(),
-        dealer: nextDealer,
-        shuffler
-    };
-
     return {
         ...state,
-        currentHand: createInitialHand(handConfig)
+        currentHand: createHand(state.players, nextDealer, shuffler)
     };
 };
 
@@ -119,11 +104,8 @@ export const endHand = (state: Game, handWinner: number): Game => {
 
     const handScore = calculateHandScore(state.currentHand, handWinner);
 
-    // Update scores
     const newScores = [...state.scores];
     newScores[handWinner] += handScore;
-
-    // Check if winner
     const hasWinner = newScores[handWinner] >= state.targetScore;
 
     if (hasWinner) {
@@ -151,15 +133,15 @@ export const play = (
         throw new Error("No active hand");
     }
 
-    if (state.currentHand.currentPlayer !== playerIndex) {
+    if (state.currentHand.playerInTurn !== playerIndex) {
         throw new Error("Not player's turn");
     }
 
     return {
         ...state,
-        currentHand: state.currentHand.playerHands[playerIndex][cardIndex].type === 'SKIP'
+        currentHand: state.currentHand.hands[playerIndex][cardIndex].type === 'SKIP'
             ? pipe(
-                (hand: Hand) => hand.playerHands[playerIndex][cardIndex].type === 'REVERSE'
+                (hand: Hand) => hand.hands[playerIndex][cardIndex].type === 'REVERSE'
                     ? reverseDirection(hand)
                     : hand,
                 (hand: Hand) => skipTurn(hand)
@@ -187,7 +169,7 @@ export const isValidPlayer = (state: Game, playerIndex: number): boolean =>
     playerIndex >= 0 && playerIndex < state.players.length;
 
 export const isPlayerTurn = (state: Game, playerIndex: number): boolean =>
-    state.currentHand?.currentPlayer === playerIndex;
+    state.currentHand?.playerInTurn === playerIndex;
 
 // Helper functions
 export const getWinningPlayer = (state: Game): PlayerName | undefined =>
