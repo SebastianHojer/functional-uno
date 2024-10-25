@@ -140,7 +140,6 @@ export const score = (hand: Hand): number | undefined => {
     }, 0);
 };
 
-// Update play function to handle UNO mechanics
 export const play = (
     cardIndex: number,
     color?: Color,
@@ -221,12 +220,13 @@ export const play = (
             hands: updatedHands,
             currentColor: color || playedCard.color || hand.currentColor,
             topCard: playedCard,
-            playerInTurn: undefined,  // Mark game as ended
+            playerInTurn: undefined,
             direction: newDirection,
             drawPile: newDrawPile,
             discardPile: [playedCard, ...hand.discardPile],
             previousPlayer: hand.playerInTurn,
-            isAccusationWindowOpen: false
+            isAccusationWindowOpen: false,
+            unoCalls: hand.unoCalls.map((_, i) => i === hand.playerInTurn ? hand.unoCalls[i] : false)
         };
     }
 
@@ -242,12 +242,10 @@ export const play = (
         discardPile: [playedCard, ...hand.discardPile],
         previousPlayer: hand.playerInTurn,
         isAccusationWindowOpen: true,
-        unoCalls: updatedHands[hand.playerInTurn].length === 2 ? hand.unoCalls :
-            update(hand.playerInTurn, false, hand.unoCalls as boolean[])
+        unoCalls: hand.unoCalls.map((_, i) => i === hand.playerInTurn ? hand.unoCalls[i] : false)
     };
 };
 
-// Update createHand to initialize UNO-related state
 export const createHand = (
     players: ReadonlyArray<PlayerName>,
     dealer: number,
@@ -370,7 +368,7 @@ export const draw = (hand: Hand): Hand => {
         drawPile: newDrawPile,
         playerInTurn: canPlayDrawnCard ? hand.playerInTurn : getNextPlayer(hand),
         isAccusationWindowOpen: false,
-        unoCalls: update(hand.playerInTurn, false, hand.unoCalls as boolean[])
+        unoCalls: hand.unoCalls.map((_, i) => i === hand.playerInTurn ? hand.unoCalls[i] : false)
     };
 };
 
