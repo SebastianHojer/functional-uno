@@ -1,10 +1,10 @@
 import { describe, it, test, expect } from '@jest/globals'
-import { createGame } from './test_adapter'
+import { createGame } from '../utils/test_adapter'
 import { shuffleBuilder, successiveShufflers } from '../utils/shuffling'
 import { Game, play } from '../../src/model/uno'
 import * as Hand from '../../src/model/hand'
 import { Color } from '../../src/model/deck'
-import { pipeActions } from './game'
+import { pipeActions } from '../utils/game'
 
 const handPlay = (index: number, color?: Color) => (h: Hand.Hand) => Hand.play(index, color, h)
 
