@@ -100,15 +100,3 @@ export const dealCards = (count: number) => (deck: Deck): [Card[], Deck] => {
 
     return [cards, remainingDeck];
 };
-
-export const filterDeck = (predicate: (card: Card) => boolean) =>
-    (deck: Deck): Deck => filter(predicate, deck);
-
-export const isNumberedCard = (card: Card): card is Card & { number: number } =>
-    card.type === 'NUMBERED' && typeof card.number === 'number';
-
-export const isColoredCard = (card: Card): card is Card & { color: Color } =>
-    card.type !== 'WILD' && card.type !== 'WILD DRAW';
-
-export const isWildCard = (card: Card): boolean =>
-    card.type === 'WILD' || card.type === 'WILD DRAW';
