@@ -1,7 +1,6 @@
 import {update} from 'ramda';
 import {Card, Deck, dealCards, shuffleDeck, createInitialDeck, Color} from './deck';
 import {Shuffler, standardShuffler} from "../utils/random_utils";
-import {PlayerName} from "./uno";
 
 export type Hand = Readonly<{
     playerCount: number;
@@ -79,7 +78,7 @@ const getNextPlayer = (hand: Hand, skip: boolean = false): number => {
 };
 
 export const createHand = (
-    players: ReadonlyArray<PlayerName>,
+    players: ReadonlyArray<string>,
     dealer: number,
     shuffler: Shuffler<Card> = standardShuffler,
     cardsPerPlayer: number = 7
@@ -233,7 +232,9 @@ export const play = (cardIndex: number, color: Color | undefined, hand: Hand): H
         playerInTurn: nextPlayer,
         previousPlayer: hand.playerInTurn,
         isAccusationWindowOpen: true,
-        unoCalls: hand.unoCalls.map((call, i) => i === hand.playerInTurn ? call : false)
+        unoCalls: hand.unoCalls.map((call, i) =>
+            (i === hand.playerInTurn || i === hand.previousPlayer) ? call : false
+        )
     };
 };
 
@@ -257,11 +258,13 @@ export const draw = (hand: Hand): Hand => {
 };
 
 export const canPlay = (cardIndex: number, hand: Hand): boolean => {
+    if(hasEnded(hand)) return false;
+
     if (hand.playerInTurn === undefined) return false;
 
     const playerHand = hand.hands[hand.playerInTurn];
-    const card = playerHand[cardIndex];
 
+    const card = playerHand[cardIndex];
     if (!card) return false;
 
     return isPlayable(playerHand, card, hand.discardPile[0]);
@@ -354,3 +357,5 @@ export const score = (hand: Hand): number | undefined => {
         0
     );
 };
+
+export type Action = (hand: Hand) => Hand;

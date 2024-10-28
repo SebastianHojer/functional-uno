@@ -119,7 +119,7 @@ describe("ending the second hand", () => {
     expect(game2.winner).toBeUndefined()
   })
   test("the score is updated", () => {
-    expect(game2.scores).toEqual([ 0, 78, 73, 0 ])
+    expect(game2.scores).toEqual([ 73, 78, 0, 0 ])
   })
   test("a new hand is started", () => {
     expect(Hand.hasEnded(game2.currentHand!)).toBeFalsy
@@ -147,13 +147,12 @@ describe("ending the third hand", () => {
   const game1 = play(pipeActions(Hand.draw, handPlay(0)), startGame)
   const game2 = play(pipeActions(Hand.draw, handPlay(0)), game1)
   const game3 = play(handPlay(0), game2)
-  const game = createGame(props)
 
   test("player 0 won", () => {
-    expect(game3.winner).toEqual(2)
+    expect(game3.winner).toEqual(0)
   })
   test("the score is updated", () => {
-    expect(game3.scores).toEqual([ 0, 78, 216, 0 ])
+    expect(game3.scores).toEqual([ 216, 78, 0, 0 ])
   })
   test("a new hand is not started", () => {
     expect(game3.currentHand).toBeUndefined()

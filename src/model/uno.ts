@@ -1,97 +1,98 @@
 import { Randomizer, Shuffler, standardRandomizer, standardShuffler } from "../utils/random_utils";
 import { Card } from "./deck";
-import * as Hand from "./hand";
-
-export type Score = number;
-export type PlayerName = string;
+import { createHand, Hand, play as playHand, hasEnded, score as handScore } from "./hand";
 
 export type Game = Readonly<{
-    players: ReadonlyArray<PlayerName>;
-    scores: ReadonlyArray<Score>;
     playerCount: number;
+    players: ReadonlyArray<string>;
     targetScore: number;
-    currentHand?: Hand.Hand;
-    dealer: number;
+    scores: ReadonlyArray<number>;
+    currentHand?: Hand;
     winner?: number;
+    shuffler: Shuffler<Card>;
+    randomizer: Randomizer;
+    cardsPerPlayer?: number;
 }>;
 
-export type Props = Readonly<{
-    players?: ReadonlyArray<PlayerName>;
+export type GameParams = {
+    players?: ReadonlyArray<string>;
     targetScore?: number;
     randomizer?: Randomizer;
     shuffler?: Shuffler<Card>;
     cardsPerPlayer?: number;
-}>;
+};
 
-export const createGame = (config: Props): Game => {
-    const {
-        players = ["A", "B"],
-        targetScore = 500,
-        randomizer = standardRandomizer,
-        shuffler = standardShuffler,
-        cardsPerPlayer = 7
-    } = config;
+export const createGame = ({
+                               players = ["A", "B"],
+                               targetScore = 500,
+                               randomizer = standardRandomizer,
+                               shuffler = standardShuffler,
+                               cardsPerPlayer
+                           }: GameParams): Game => {
+    if (players.length < 2) {
+        throw new Error("At least 2 players are required");
+    }
 
     if (targetScore <= 0) {
         throw new Error("Target score must be greater than 0");
     }
 
-    if (players.length < 2) {
-        throw new Error("Game requires at least 2 players");
-    }
-
-    if (players.length > 10) {
-        throw new Error("Maximum 10 players allowed");
-    }
-
-    const dealer = randomizer(players.length);
-    const initialHand = Hand.createHand(players, dealer, shuffler, cardsPerPlayer);
-
     return {
-        players,
         playerCount: players.length,
-        scores: Array(players.length).fill(0),
+        players,
         targetScore,
-        currentHand: initialHand,
-        dealer
+        scores: Array(players.length).fill(0),
+        currentHand: createHand(players, randomizer(players.length), shuffler, cardsPerPlayer),
+        shuffler,
+        randomizer,
+        cardsPerPlayer
     };
 };
 
-export const getPlayer = (state: Game, playerIndex: number): PlayerName => {
-    if (playerIndex < 0 || playerIndex >= state.players.length) {
-        throw new Error("Player index out of bounds");
+export const play = (action: (hand: Hand) => Hand, game: Game): Game => {
+    if (!game.currentHand || game.winner !== undefined) {
+        return game;
     }
-    return state.players[playerIndex];
-};
 
-export const getScore = (state: Game, playerIndex: number): Score => {
-    if (playerIndex < 0 || playerIndex >= state.scores.length) {
-        throw new Error("Player index out of bounds");
+    const newHand = action(game.currentHand);
+
+    if (!hasEnded(newHand)) {
+        return {
+            ...game,
+            currentHand: newHand
+        };
     }
-    return state.scores[playerIndex];
-};
 
-export const startNewHand = (state: Game, randomizer: Randomizer = standardRandomizer, shuffler: Shuffler<Card> = standardShuffler): Game => {
-    const nextDealer = (state.dealer + 1) % state.players.length;
-    const newHand = Hand.createHand(state.players, nextDealer, shuffler);
+    // Hand has ended, update scores
+    const winningPlayer = newHand.hands.findIndex(h => h.length === 0);
+    const handPoints = handScore(newHand);
 
+    if (handPoints === undefined || winningPlayer === -1) {
+        return game;
+    }
+
+    const newScores = [...game.scores];
+    newScores[winningPlayer] += handPoints;
+
+    // Check if game is over
+    if (newScores[winningPlayer] >= game.targetScore) {
+        return {
+            ...game,
+            scores: newScores,
+            currentHand: undefined,
+            winner: winningPlayer
+        };
+    }
+
+    // Start new hand with original shuffler
     return {
-        ...state,
-        currentHand: newHand,
-        dealer: nextDealer
-    };
-};
-
-export const play = (
-    action: (hand: Hand.Hand) => Hand.Hand,
-    state: Game
-): Game => {
-    if (!state.currentHand) {
-        throw new Error("No active hand");
-    }
-
-    return {
-        ...state,
-        currentHand: action(state.currentHand)
+        ...game,
+        scores: newScores,
+        currentHand: createHand(
+            game.players,
+            game.randomizer(game.players.length),
+            game.shuffler,
+            game.cardsPerPlayer
+        )
     };
 };
