@@ -96,10 +96,10 @@ describe("Playing a hand", () => {
 
 const secondShuffle = shuffleBuilder({ players: 4, cardsPerPlayer: 1 })
   .discard().is({ type: 'NUMBERED', color: 'BLUE', number: 8 })
-  .hand(0).is({ color: 'YELLOW', number: 3 })
-  .hand(1).is({ number: 8 })
-  .hand(2).is({ color: 'GREEN', type: 'DRAW' })
-  .hand(3).is({ type: 'WILD DRAW' })
+  .hand(0).is({ number: 8 })
+  .hand(1).is({ color: 'GREEN', type: 'DRAW' })
+  .hand(2).is({ type: 'WILD DRAW' })
+  .hand(3).is({ color: 'YELLOW', number: 3 })
   .drawPile().is({ type: 'NUMBERED', color: 'RED', number: 0})
   .build()
 
@@ -113,7 +113,7 @@ describe("ending the second hand", () => {
   }
   const startGame = createGame(props)
   const game1 = play(pipeActions(Hand.draw, handPlay(0)), startGame)
-  const game2 = play(pipeActions(Hand.draw, handPlay(0)), game1)
+  const game2 = play(pipeActions(handPlay(0)), game1)
 
   test("the game still has no winner", () => {
     expect(game2.winner).toBeUndefined()
@@ -145,7 +145,7 @@ describe("ending the third hand", () => {
   }
   const startGame = createGame(props)
   const game1 = play(pipeActions(Hand.draw, handPlay(0)), startGame)
-  const game2 = play(pipeActions(Hand.draw, handPlay(0)), game1)
+  const game2 = play(handPlay(0), game1)
   const game3 = play(handPlay(0), game2)
 
   test("player 0 won", () => {
