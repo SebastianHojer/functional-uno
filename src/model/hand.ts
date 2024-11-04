@@ -233,7 +233,7 @@ export const play = (cardIndex: number, color: Color | undefined, hand: Hand): H
         previousPlayer: hand.playerInTurn,
         isAccusationWindowOpen: true,
         unoCalls: hand.unoCalls.map((call, i) =>
-            (i === hand.playerInTurn || i === hand.previousPlayer) ? call : false
+            i === hand.playerInTurn ? call : false
         )
     };
 };
@@ -250,7 +250,10 @@ export const draw = (hand: Hand): Hand => {
             ...newHand,
             playerInTurn: getNextPlayer(newHand),
             previousPlayer: hand.playerInTurn,
-            isAccusationWindowOpen: false
+            isAccusationWindowOpen: false,
+            unoCalls: hand.unoCalls.map((call, i) =>
+                i === hand.playerInTurn ? call : false
+            )
         };
     }
 
@@ -284,7 +287,6 @@ export const checkUnoFailure = (params: { accuser: number, accused: number }, ha
         throw new Error("Player index out of bounds");
     }
 
-    // Can only catch UNO failure during the accusation window
     if (!hand.isAccusationWindowOpen || params.accused !== hand.previousPlayer) {
         return false;
     }
